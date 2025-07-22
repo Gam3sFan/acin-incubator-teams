@@ -4,7 +4,8 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   exitKiosk: (): void => ipcRenderer.send('exit-kiosk'),
-  closeApp: (): void => ipcRenderer.send('close-app')
+  closeApp: (): void => ipcRenderer.send('close-app'),
+  openTeams: (): void => ipcRenderer.send('open-teams')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

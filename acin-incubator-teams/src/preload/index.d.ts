@@ -6,6 +6,7 @@ declare global {
     api: {
       exitKiosk: () => void
       closeApp: () => void
+      openTeams: () => void
     }
   }
 }
