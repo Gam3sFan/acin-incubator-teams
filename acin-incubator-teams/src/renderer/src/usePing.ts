@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export function usePing(url: string = 'https://teams.microsoft.com'): boolean {
+export function usePing(url: string = '10.107.188.6'): boolean {
   const [online, setOnline] = useState(true)
 
   useEffect(() => {
