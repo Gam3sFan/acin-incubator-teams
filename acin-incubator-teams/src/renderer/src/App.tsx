@@ -69,7 +69,8 @@ export default function App(): React.JSX.Element {
           <img
             src={teamsIcon}
             alt="Teams"
-            className="absolute right-6 top-2 w-10 h-10 opacity-90"
+            className="absolute right-6 top-2 w-10 h-10 opacity-90 cursor-pointer"
+            onClick={() => window.api.openTeams()}
           />
         </div>
 

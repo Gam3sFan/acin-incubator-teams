@@ -63,6 +63,10 @@ app.whenReady().then(() => {
     app.quit()
   })
 
+  ipcMain.on('open-teams', () => {
+    shell.openExternal('msteams:')
+  })
+
   createWindow()
 
   app.on('activate', function () {
