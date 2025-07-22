@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ROOMS } from './roomData'
 import { usePing } from './usePing'
+import ControlPanel from './components/ControlPanel'
 import bgVideo from './assets/background.mp4'
 import teamsIcon from './assets/teams.svg'
 import touchIcon from './assets/touch.svg'
@@ -8,7 +9,9 @@ import alertIcon from './assets/alert.svg'
 import './index.css'
 
 export default function App(): React.JSX.Element {
-  const [roomName] = useState(() => localStorage.getItem('roomName') || 'Incubator Future')
+  const [roomName, setRoomName] = useState(() => localStorage.getItem('roomName') || 'Incubator Future')
+  const [broker, setBroker] = useState(() => localStorage.getItem('broker') || '10.107.188.6')
+  const [showPanel, setShowPanel] = useState(false)
   const roomInfo = ROOMS[roomName] || { id: 'unknown' }
 
   const [now, setNow] = useState(new Date())
@@ -17,7 +20,7 @@ export default function App(): React.JSX.Element {
     return () => clearInterval(t)
   }, [])
 
-  const online = usePing()
+  const online = usePing(broker)
 
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateStr = now
@@ -26,6 +29,16 @@ export default function App(): React.JSX.Element {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden text-white font-sans select-none">
+      <div className="absolute top-0 right-0 w-10 h-10 z-20" onClick={() => setShowPanel(true)} />
+      {showPanel && (
+        <ControlPanel
+          onClose={() => setShowPanel(false)}
+          setBroker={setBroker}
+          setRoom={setRoomName}
+          broker={broker}
+          room={roomName}
+        />
+      )}
 <video src={bgVideo} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
       
       <div className="absolute inset-0 bg-purple-700/70 mix-blend-multiply" />

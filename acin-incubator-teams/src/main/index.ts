@@ -54,6 +54,15 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
+  ipcMain.on('exit-kiosk', () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (win) win.setKiosk(false)
+  })
+
+  ipcMain.on('close-app', () => {
+    app.quit()
+  })
+
   createWindow()
 
   app.on('activate', function () {
