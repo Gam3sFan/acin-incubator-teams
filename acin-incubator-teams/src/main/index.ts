@@ -1,76 +1,174 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import fs from 'fs'
+import ini from 'ini'
+import AutoLaunch from 'auto-launch'
+import { spawn } from 'child_process'
+import robot from 'robotjs'
+import os from 'os'
+let mqtt: typeof import('mqtt') | undefined
 
-function createWindow(): void {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 1920,
-    height: 1080,
-    show: false,
-    autoHideMenuBar: true,
-    fullscreen: true, // Avvia a schermo intero
-    kiosk: true,      // Modalità kiosk
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const isDev = !app.isPackaged
+let win: BrowserWindow | null
+
+/* ---------- CONFIG ---------- */
+const cfgDir = path.join(app.getPath('userData'))
+const cfgPath = path.join(cfgDir, 'config.ini')
+interface Config {
+  room: string
+  broker: string
+  topicTemplate: string
+  [key: string]: unknown
+}
+const defaultCfg: Config = {
+  room: 'Incubator Future',
+  broker: 'mqtt://127.0.0.1:1883',
+  topicTemplate: 'teams/${hostname}'
+}
+function loadConfig(): Config {
+  try {
+    if (!fs.existsSync(cfgPath)) {
+      if (!fs.existsSync(cfgDir)) fs.mkdirSync(cfgDir, { recursive: true })
+      fs.writeFileSync(cfgPath, ini.stringify(defaultCfg))
     }
-  })
+    return { ...defaultCfg, ...ini.parse(fs.readFileSync(cfgPath, 'utf-8')) }
+  } catch (e) {
+    console.error('Config load error', e)
+    return { ...defaultCfg }
+  }
+}
+function saveConfig(newCfg: Config): boolean {
+  try {
+    fs.writeFileSync(cfgPath, ini.stringify({ ...defaultCfg, ...newCfg }))
+    return true
+  } catch (e) {
+    console.error('Config save error', e)
+    return false
+  }
+}
+let CONFIG: Config = loadConfig()
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
+/* ---------- util ---------- */
+function sendMqttStatus(ok: boolean): void {
+  win?.webContents?.send('mqtt-status', ok)
+}
+function sendConfigToRenderer(): void {
+  win?.webContents?.send('config', CONFIG)
+}
+function bringTeamsFullScreen(): void {
+  try {
+    const ps = spawn('powershell', [
+      '-Command',
+      'Get-Process Teams | ForEach-Object {($_.MainWindowHandle)}'
+    ])
+    ps.stdout.on('data', (b) => {
+      const hWnd = b.toString().trim()
+      if (hWnd) {
+        spawn('powershell', [
+          '-Command',
+          `Add-Type "[DllImport('user32.dll')]public static extern bool SetForegroundWindow(IntPtr h);" -Name a -Namespace b; [b.a]::SetForegroundWindow([intptr]${hWnd})`
+        ])
+      }
+    })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    setTimeout(() => robot.keyTap('f', ['control', 'shift']), 300)
+  } catch (err) {
+    console.error('Teams full-screen failed', err)
   }
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+/* ---------- MQTT ---------- */
+let mqttClient: import('mqtt').MqttClient | undefined
+async function setupMqttListener(): Promise<void> {
+  if (mqttClient) mqttClient.end(true)
+  try {
+    mqtt = await import('mqtt')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.warn('mqtt library missing:', msg)
+    sendMqttStatus(false)
+    return
+  }
+  let connected = false
+  mqttClient = mqtt.connect(CONFIG.broker)
+  const topic = CONFIG.topicTemplate.replace('${hostname}', os.hostname().toLowerCase())
+  const updateStatus = (ok: boolean): void => {
+    if (ok !== connected) {
+      connected = ok
+      sendMqttStatus(ok)
+    }
+  }
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+  mqttClient.on('connect', () =>
+    mqttClient!.subscribe(topic, (err: Error | null) => updateStatus(!err))
+  )
+  mqttClient.on('reconnect', () => updateStatus(false))
+  mqttClient.on('offline', () => updateStatus(false))
+  mqttClient.on('error', (err: Error) => {
+    console.error('MQTT error', err)
+    updateStatus(false)
   })
+  mqttClient.on('close', () => updateStatus(false))
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  mqttClient.on('message', (_: string, payload: Buffer) => {
+    try {
+      const data = JSON.parse(payload.toString())
+      if (data.in_meeting) {
+        bringTeamsFullScreen()
+        win?.setAlwaysOnTop(true, 'screen-saver')
+      } else {
+        win?.setAlwaysOnTop(false)
+      }
+    } catch (e) {
+      console.error('MQTT message parse error', e)
+    }
+  })
+}
 
+/* ---------- finestra ---------- */
+function createWindow(): void {
+  win = new BrowserWindow({
+    fullscreen: true,
+    kiosk: true,
+    autoHideMenuBar: true,
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      contextIsolation: true
+    }
+  })
+  win.setFullScreen(true)
+  if (isDev && process.env['ELECTRON_RENDERER_URL']) win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  else win.loadFile(path.join(__dirname, '../renderer/index.html'))
+  win.webContents.on('did-finish-load', sendConfigToRenderer)
+}
+
+/* ---------- IPC ---------- */
+ipcMain.handle('get-config', () => CONFIG)
+ipcMain.handle('set-config', (_e, newCfg: Partial<Config>): { ok: boolean } => {
+  CONFIG = { ...CONFIG, ...newCfg }
+  if (saveConfig(CONFIG)) {
+    setupMqttListener().catch(console.error)
+    sendConfigToRenderer()
+    return { ok: true }
+  }
+  return { ok: false }
+})
+
+app.whenReady().then(() => {
   createWindow()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
+  setupMqttListener().catch(console.error)
+  new AutoLaunch({ name: 'RoomDisplayApp' }).isEnabled().then((e) => {
+    if (!e) new AutoLaunch({ name: 'RoomDisplayApp' }).enable()
+  })
+  app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  mqttClient?.end(true)
+  app.quit()
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
