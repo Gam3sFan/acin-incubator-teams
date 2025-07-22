@@ -62,7 +62,7 @@ export default function App(): React.JSX.Element {
 
         <div className="flex items-center space-x-3 text-sm opacity-80">
           <img src={touchIcon} alt="touch" className="w-6 h-6" />
-          <span>This is a touchscreen</span>
+          <span>This is a touchscreen.</span>
         </div>
       </div>
     </div>
