@@ -9,9 +9,10 @@ import alertIcon from './assets/alert.svg'
 import './index.css'
 
 export default function App(): React.JSX.Element {
-  const [roomName, setRoomName] = useState(
-    () => localStorage.getItem('lastRoom') || 'Incubator Future'
-  )
+  const [roomName, setRoomName] = useState(() => {
+    const saved = localStorage.getItem('lastRoom')
+    return saved || 'Incubator Future'
+  })
   const [broker, setBroker] = useState('10.107.188.153')
   const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
   const [mqttOk, setMqttOk] = useState(false)
@@ -37,7 +38,10 @@ export default function App(): React.JSX.Element {
       if (cfg.broker) setBroker(String(cfg.broker))
       if (cfg.room) setRoomName(String(cfg.room))
       if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
-   })
+        if (!localStorage.getItem('lastRoom') && cfg.room) {
+          setRoomName(String(cfg.room))
+        }
+    })
     window.api.onConfig((cfg) => {
       if (cfg.broker) setBroker(String(cfg.broker))
       if (cfg.room) setRoomName(String(cfg.room))

@@ -28,7 +28,7 @@ export default function ControlPanel({
   const [micLevel, setMicLevel] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
     navigator.mediaDevices
@@ -89,6 +89,9 @@ export default function ControlPanel({
           localStorage.setItem('lastRoom', localRoom)
           onClose()
         }
+      })
+      .catch((err) => {
+        console.error('Failed to save config', err)
       })
   }
 
