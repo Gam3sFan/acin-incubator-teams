@@ -79,6 +79,10 @@ export default function ControlPanel({
   }
 
   async function save(): Promise<void> {
+     if (!window.api?.setConfig) {
+      console.error('window.api is not available')
+      return
+    }
     try {
       const res = await window.api.setConfig({
         broker: localBroker,
@@ -157,10 +161,10 @@ export default function ControlPanel({
           )}
         </div>
         <div className="flex justify-between pt-2">
-          <button onClick={() => window.api.exitKiosk()} className="px-3 py-1 bg-gray-200 rounded">
+          <button onClick={() => window.api?.exitKiosk?.()} className="px-3 py-1 bg-gray-200 rounded">
             Exit kiosk
           </button>
-          <button onClick={() => window.api.closeApp()} className="px-3 py-1 bg-gray-200 rounded">
+          <button onClick={() => window.api?.closeApp?.()} className="px-3 py-1 bg-gray-200 rounded">
             Close app
           </button>
           <button onClick={save} className="px-3 py-1 bg-blue-600 text-white rounded">

@@ -145,9 +145,9 @@ function createWindow(): void {
     height: 1080,
     show: false,
     autoHideMenuBar: true,
-    fullscreen: false,
-    kiosk: false,
-    alwaysOnTop: true,
+    fullscreen: true,
+    kiosk: true,
+    alwaysOnTop: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -196,7 +196,9 @@ ipcMain.on('close-app', () => {
 })
 
 ipcMain.on('open-teams', () => {
-  shell.openExternal('msteams://')
+  shell.openExternal('msteams://').catch((err) => {
+    console.error('Failed to open Teams', err)
+  })
 })
 
 app.whenReady().then(() => {

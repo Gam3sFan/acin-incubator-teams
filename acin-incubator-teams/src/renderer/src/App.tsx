@@ -104,10 +104,10 @@ export default function App(): React.JSX.Element {
             src={teamsIcon}
             alt="Teams"
             className="absolute right-6 top-2 w-10 h-10 opacity-90 cursor-pointer"
-            onClick={() => window.api.openTeams()}
+            onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
           />
           <button
-            onClick={() => window.api.openTeams()}
+            onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
             className="px-3 py-2 rounded text-white" style={{ backgroundColor: '#4f42b5' }}
           >
             Open Teams
