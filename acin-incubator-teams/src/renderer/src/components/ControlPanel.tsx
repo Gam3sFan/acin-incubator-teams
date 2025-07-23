@@ -72,9 +72,6 @@ export default function ControlPanel({
           <button onClick={() => window.api.exitKiosk()} className="px-3 py-1 bg-gray-200 rounded">
             Exit kiosk
           </button>
-          <button onClick={() => window.api.openTeams()} className="px-3 py-1 bg-gray-200 rounded">
-            Open Teams
-          </button>
           <button onClick={() => window.api.closeApp()} className="px-3 py-1 bg-gray-200 rounded">
             Close app
           </button>

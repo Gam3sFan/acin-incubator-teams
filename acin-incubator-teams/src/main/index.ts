@@ -28,7 +28,7 @@ interface Config {
 }
 const defaultCfg: Config = {
   room: 'Incubator Future',
-  broker: 'mqtt://127.0.0.1:1883',
+  broker: 'mqtt://10.107.188.153:1883',
   topicTemplate: 'teams/${hostname}'
 }
 function loadConfig(): Config {
@@ -145,8 +145,8 @@ function createWindow(): void {
     height: 1080,
     show: false,
     autoHideMenuBar: true,
-    fullscreen: true,
-    kiosk: true,
+    fullscreen: false,
+    kiosk: false,
     alwaysOnTop: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
