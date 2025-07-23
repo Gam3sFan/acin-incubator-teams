@@ -147,7 +147,7 @@ export default function ControlPanel({
             <button onClick={startTest} className="mt-2 px-3 py-1 bg-gray-200 rounded w-full">
               Start webcam/mic test
             </button>
-          )
+          )}
         </div>
         <div className="flex justify-between pt-2">
           <button onClick={() => window.api.exitKiosk()} className="px-3 py-1 bg-gray-200 rounded">
