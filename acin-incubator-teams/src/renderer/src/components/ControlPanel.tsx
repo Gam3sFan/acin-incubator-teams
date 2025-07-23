@@ -5,20 +5,36 @@ interface Props {
   onClose: () => void
   setBroker: (b: string) => void
   setRoom: (r: string) => void
+  setTopicTemplate: (t: string) => void
   broker: string
   room: string
+  topicTemplate: string
 }
 
-export default function ControlPanel({ onClose, setBroker, setRoom, broker, room }: Props): React.JSX.Element {
+export default function ControlPanel({
+  onClose,
+  setBroker,
+  setRoom,
+  setTopicTemplate,
+  broker,
+  room,
+  topicTemplate
+}: Props): React.JSX.Element {
   const [localBroker, setLocalBroker] = useState(broker)
   const [localRoom, setLocalRoom] = useState(room)
+  const [localTopic, setLocalTopic] = useState(topicTemplate)
 
   function save(): void {
-    localStorage.setItem('broker', localBroker)
-    localStorage.setItem('roomName', localRoom)
-    setBroker(localBroker)
-    setRoom(localRoom)
-    onClose()
+    window.api
+      .setConfig({ broker: localBroker, room: localRoom, topicTemplate: localTopic })
+      .then((res) => {
+        if (res.ok) {
+          setBroker(localBroker)
+          setRoom(localRoom)
+          setTopicTemplate(localTopic)
+          onClose()
+        }
+      })
   }
 
   return (
@@ -26,11 +42,27 @@ export default function ControlPanel({ onClose, setBroker, setRoom, broker, room
       <div className="bg-white text-black p-6 rounded-xl space-y-4 w-96 shadow-lg">
         <div>
           <label className="block text-sm font-medium">Broker</label>
-          <input value={localBroker} onChange={(e) => setLocalBroker(e.target.value)} className="w-full mt-1 p-2 border rounded" />
+          <input
+            value={localBroker}
+            onChange={(e) => setLocalBroker(e.target.value)}
+            className="w-full mt-1 p-2 border rounded"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Topic Template</label>
+          <input
+            value={localTopic}
+            onChange={(e) => setLocalTopic(e.target.value)}
+            className="w-full mt-1 p-2 border rounded"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium">Room</label>
-          <select value={localRoom} onChange={(e) => setLocalRoom(e.target.value)} className="w-full mt-1 p-2 border rounded">
+          <select
+            value={localRoom}
+            onChange={(e) => setLocalRoom(e.target.value)}
+            className="w-full mt-1 p-2 border rounded"
+          >
             {Object.keys(ROOMS).map((r) => (
               <option key={r}>{r}</option>
             ))}
@@ -39,6 +71,9 @@ export default function ControlPanel({ onClose, setBroker, setRoom, broker, room
         <div className="flex justify-between pt-2">
           <button onClick={() => window.api.exitKiosk()} className="px-3 py-1 bg-gray-200 rounded">
             Exit kiosk
+          </button>
+          <button onClick={() => window.api.openTeams()} className="px-3 py-1 bg-gray-200 rounded">
+            Open Teams
           </button>
           <button onClick={() => window.api.closeApp()} className="px-3 py-1 bg-gray-200 rounded">
             Close app

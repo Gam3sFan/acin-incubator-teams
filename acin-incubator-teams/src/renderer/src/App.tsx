@@ -9,8 +9,10 @@ import alertIcon from './assets/alert.svg'
 import './index.css'
 
 export default function App(): React.JSX.Element {
-  const [roomName, setRoomName] = useState(() => localStorage.getItem('roomName') || 'Incubator Future')
-  const [broker, setBroker] = useState(() => localStorage.getItem('broker') || '10.107.188.6')
+  const [roomName, setRoomName] = useState('Incubator Future')
+  const [broker, setBroker] = useState('10.107.188.6')
+  const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
+  const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
   const roomInfo = ROOMS[roomName] || { id: 'unknown' }
 
@@ -20,7 +22,21 @@ export default function App(): React.JSX.Element {
     return () => clearInterval(t)
   }, [])
 
-  const online = usePing(broker)
+  useEffect(() => {
+    window.api.getConfig().then((cfg) => {
+      if (cfg.broker) setBroker(String(cfg.broker))
+      if (cfg.room) setRoomName(String(cfg.room))
+      if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
+    })
+    window.api.onConfig((cfg) => {
+      if (cfg.broker) setBroker(String(cfg.broker))
+      if (cfg.room) setRoomName(String(cfg.room))
+      if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
+    })
+    window.api.onMqttStatus(setMqttOk)
+  }, [])
+
+  const online = usePing(broker.replace(/^mqtts?:\/\//, '').split(':')[0])
 
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateStr = now
@@ -35,12 +51,21 @@ export default function App(): React.JSX.Element {
           onClose={() => setShowPanel(false)}
           setBroker={setBroker}
           setRoom={setRoomName}
+          setTopicTemplate={setTopicTemplate}
           broker={broker}
           room={roomName}
+          topicTemplate={topicTemplate}
         />
       )}
-<video src={bgVideo} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
-      
+      <video
+        src={bgVideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
       <div className="absolute inset-0 bg-purple-700/70 mix-blend-multiply" />
       <div className="relative z-10 flex flex-col justify-between w-full h-full p-12">
         <div>
@@ -49,14 +74,10 @@ export default function App(): React.JSX.Element {
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
-          {!online && (
+          {(!online || !mqttOk) && (
             <div className="mt-6 inline-flex items-center space-x-3 bg-yellow-500/20 px-4 py-2 rounded-full backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.25)]">
-              <img
-            src={alertIcon}
-            alt="alert"
-             className="w-6 h-6"
-          />
-              <span className="font-medium">Network Issue</span>
+              <img src={alertIcon} alt="alert" className="w-6 h-6" />
+              <span className="font-medium">Connection Issue</span>
             </div>
           )}
         </div>
