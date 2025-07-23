@@ -89,7 +89,7 @@ export default function App(): React.JSX.Element {
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
           {(!online || !mqttOk) && (
-            <div className="mt-6 inline-flex items-center space-x-3 bg-yellow-500/20 px-4 py-2 rounded-full backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.25)]">
+            <div className="mt-6 inline-flex items-center space-x-3  bg-black/20 backdrop-blur-md px-4 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.25)]">
               <img src={alertIcon} alt="alert" className="w-6 h-6" />
             </div>
           )}

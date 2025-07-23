@@ -145,8 +145,8 @@ function createWindow(): void {
     height: 1080,
     show: false,
     autoHideMenuBar: true,
-    fullscreen: true,
-    kiosk: true,
+    fullscreen: false,
+    kiosk: false,
     alwaysOnTop: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -196,7 +196,6 @@ ipcMain.on('close-app', () => {
 })
 
 ipcMain.on('open-teams', () => {
-  // Use the full protocol to ensure Windows correctly launches the Teams app
   shell.openExternal('msteams://')
 })
 
