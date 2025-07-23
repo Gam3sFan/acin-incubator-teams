@@ -9,7 +9,7 @@ import robot from 'robotjs'
 import os from 'os'
 let mqtt: typeof import('mqtt') | undefined
 
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
 const __filename = fileURLToPath(import.meta.url)
