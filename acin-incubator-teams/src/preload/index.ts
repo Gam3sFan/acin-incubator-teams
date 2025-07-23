@@ -5,7 +5,14 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   exitKiosk: (): void => ipcRenderer.send('exit-kiosk'),
   closeApp: (): void => ipcRenderer.send('close-app'),
-  openTeams: (): void => ipcRenderer.send('open-teams')
+  openTeams: (): void => ipcRenderer.send('open-teams'),
+  getConfig: (): Promise<Record<string, unknown>> => ipcRenderer.invoke('get-config'),
+  setConfig: (cfg: Record<string, unknown>): Promise<{ ok: boolean }> =>
+    ipcRenderer.invoke('set-config', cfg),
+  onMqttStatus: (cb: (ok: boolean) => void): void =>
+    ipcRenderer.on('mqtt-status', (_e, ok) => cb(ok)),
+  onConfig: (cb: (cfg: Record<string, unknown>) => void): void =>
+    ipcRenderer.on('config', (_e, cfg) => cb(cfg))
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
