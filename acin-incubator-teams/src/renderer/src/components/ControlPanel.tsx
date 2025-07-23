@@ -86,6 +86,7 @@ export default function ControlPanel({
           setBroker(localBroker)
           setRoom(localRoom)
           setTopicTemplate(localTopic)
+          localStorage.setItem('lastRoom', localRoom)
           onClose()
         }
       })

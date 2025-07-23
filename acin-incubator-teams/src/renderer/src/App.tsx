@@ -9,7 +9,9 @@ import alertIcon from './assets/alert.svg'
 import './index.css'
 
 export default function App(): React.JSX.Element {
-  const [roomName, setRoomName] = useState('Incubator Future')
+  const [roomName, setRoomName] = useState(
+    () => localStorage.getItem('lastRoom') || 'Incubator Future'
+  )
   const [broker, setBroker] = useState('10.107.188.153')
   const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
   const [mqttOk, setMqttOk] = useState(false)
@@ -21,6 +23,10 @@ export default function App(): React.JSX.Element {
     const t = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('lastRoom', roomName)
+  }, [roomName])
 
   useEffect(() => {
      if (!window.api) {
