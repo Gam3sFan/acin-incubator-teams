@@ -196,7 +196,8 @@ ipcMain.on('close-app', () => {
 })
 
 ipcMain.on('open-teams', () => {
-  shell.openExternal('msteams:')
+  // Use the full protocol to ensure Windows correctly launches the Teams app
+  shell.openExternal('msteams://')
 })
 
 app.whenReady().then(() => {

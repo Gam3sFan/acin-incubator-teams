@@ -78,21 +78,25 @@ export default function ControlPanel({
     }
   }
 
-  function save(): void {
-    window.api
-      .setConfig({ broker: localBroker, room: localRoom, topicTemplate: localTopic })
-      .then((res) => {
-        if (res.ok) {
-          setBroker(localBroker)
-          setRoom(localRoom)
-          setTopicTemplate(localTopic)
-          localStorage.setItem('lastRoom', localRoom)
-          onClose()
-        }
+  async function save(): Promise<void> {
+    try {
+      const res = await window.api.setConfig({
+        broker: localBroker,
+        room: localRoom,
+        topicTemplate: localTopic
       })
-      .catch((err) => {
-        console.error('Failed to save config', err)
-      })
+      if (res.ok) {
+        setBroker(localBroker)
+        setRoom(localRoom)
+        setTopicTemplate(localTopic)
+        localStorage.setItem('lastRoom', localRoom)
+        onClose()
+      } else {
+        console.error('Failed to save config')
+      }
+    } catch (err) {
+      console.error('Failed to save config', err)
+    }
   }
 
   return (
