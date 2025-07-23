@@ -90,6 +90,9 @@ export default function ControlPanel({
           onClose()
         }
       })
+      .catch((err) => {
+        console.error('Failed to save config', err)
+      })
   }
 
   return (
