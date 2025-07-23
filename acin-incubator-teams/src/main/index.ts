@@ -185,8 +185,10 @@ ipcMain.handle('set-config', (_e, newCfg: Partial<Config>): { ok: boolean } => {
 })
 
 ipcMain.on('exit-kiosk', () => {
-  const w = BrowserWindow.getFocusedWindow()
-  if (w) w.setKiosk(false)
+  if (win) {
+    win.setKiosk(false)
+    win.setFullScreen(false)
+  }
 })
 
 ipcMain.on('close-app', () => {
