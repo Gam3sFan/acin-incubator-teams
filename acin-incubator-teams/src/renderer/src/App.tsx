@@ -10,7 +10,7 @@ import './index.css'
 
 export default function App(): React.JSX.Element {
   const [roomName, setRoomName] = useState('Incubator Future')
-  const [broker, setBroker] = useState('10.107.188.6')
+  const [broker, setBroker] = useState('10.107.188.153')
   const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
   const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
@@ -78,10 +78,9 @@ export default function App(): React.JSX.Element {
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
-          {(!online) && (
+          {(!online || !mqttOk) && (
             <div className="mt-6 inline-flex items-center space-x-3 bg-yellow-500/20 px-4 py-2 rounded-full backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.25)]">
               <img src={alertIcon} alt="alert" className="w-6 h-6" />
-              <span className="font-medium">Connection Issue</span>
             </div>
           )}
         </div>
@@ -98,6 +97,7 @@ export default function App(): React.JSX.Element {
             onClick={() => window.api.openTeams()}
           />
         </div>
+
         <div className="flex items-center space-x-3 text-sm opacity-80">
           <img src={touchIcon} alt="touch" className="w-6 h-6" />
           <span>This is a touchscreen.</span>
