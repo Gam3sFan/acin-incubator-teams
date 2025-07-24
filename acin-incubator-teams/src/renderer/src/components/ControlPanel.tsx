@@ -6,9 +6,11 @@ interface Props {
   setBroker: (b: string) => void
   setRoom: (r: string) => void
   setTopicTemplate: (t: string) => void
+  setShowAlerts: (s: boolean) => void
   broker: string
   room: string
   topicTemplate: string
+  showAlerts: boolean
 }
 
 export default function ControlPanel({
@@ -16,9 +18,11 @@ export default function ControlPanel({
   setBroker,
   setRoom,
   setTopicTemplate,
+  setShowAlerts,
   broker,
   room,
-  topicTemplate
+  topicTemplate,
+  showAlerts
 }: Props): React.JSX.Element {
   const [localBroker, setLocalBroker] = useState(broker)
   const [localRoom, setLocalRoom] = useState(room)
@@ -79,7 +83,7 @@ export default function ControlPanel({
   }
 
   async function save(): Promise<void> {
-     if (!window.api?.setConfig) {
+    if (!window.api?.setConfig) {
       console.error('window.api is not available')
       return
     }
@@ -138,7 +142,9 @@ export default function ControlPanel({
           <h3 className="text-sm font-medium">Devices</h3>
           <ul className="max-h-24 overflow-auto text-xs mt-1 space-y-1">
             {devices.map((d) => (
-              <li key={d.deviceId}>{d.kind}: {d.label || 'Unnamed'}</li>
+              <li key={d.deviceId}>
+                {d.kind}: {d.label || 'Unnamed'}
+              </li>
             ))}
           </ul>
           {stream ? (
@@ -161,11 +167,17 @@ export default function ControlPanel({
           )}
         </div>
         <div className="flex justify-between pt-2">
-          <button onClick={() => window.api?.exitKiosk?.()} className="px-3 py-1 bg-gray-200 rounded">
-            Exit kiosk
-          </button>
-          <button onClick={() => window.api?.closeApp?.()} className="px-3 py-1 bg-gray-200 rounded">
+          <button
+            onClick={() => window.api?.closeApp?.()}
+            className="px-3 py-1 bg-gray-200 rounded"
+          >
             Close app
+          </button>
+          <button
+            onClick={() => setShowAlerts(!showAlerts)}
+            className="px-3 py-1 bg-gray-200 rounded"
+          >
+            {showAlerts ? 'Hide alerts' : 'Show alerts'}
           </button>
           <button onClick={save} className="px-3 py-1 bg-blue-600 text-white rounded">
             Save

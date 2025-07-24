@@ -121,9 +121,14 @@ async function setupMqttListener(): Promise<void> {
     let incoming = false
     let active = false
     try {
-      const data = JSON.parse(msg)
-      incoming = Boolean((data as any).incomingcall)
-      active = Boolean((data as any).in_meeting || (data as any).is_in_meeting)
+      interface ActivityMessage {
+        incomingcall?: unknown
+        in_meeting?: unknown
+        is_in_meeting?: unknown
+      }
+      const data = JSON.parse(msg) as ActivityMessage
+      incoming = Boolean(data.incomingcall)
+      active = Boolean(data.in_meeting || data.is_in_meeting)
     } catch {
       const low = msg.toLowerCase()
       incoming = low.includes('incomingcall')
