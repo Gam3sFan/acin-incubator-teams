@@ -30,6 +30,11 @@ export default function ControlPanel({
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [micLevel, setMicLevel] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [mqttEnabled, setMqttEnabled] = useState(false)
+  const [mqttToggleError, setMqttToggleError] = useState<string | null>(null)
+  const [appVersion, setAppVersion] = useState<string>('1.0.0')
   const videoRef = useRef<HTMLVideoElement>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const rafRef = useRef<number | null>(null)
@@ -47,6 +52,17 @@ export default function ControlPanel({
       ;(videoRef.current as any).srcObject = stream
     }
   }, [stream])
+
+  // Aggiorna la room immediatamente al cambio della select
+  useEffect(() => {
+    setRoom(localRoom)
+  }, [localRoom])
+
+  useEffect(() => {
+    if (window.api?.getAppVersion) {
+      window.api.getAppVersion().then(setAppVersion)
+    }
+  }, [])
 
   function stopTest(): void {
     stream?.getTracks().forEach((t) => t.stop())
@@ -83,33 +99,74 @@ export default function ControlPanel({
   }
 
   async function save(): Promise<void> {
-    if (!window.api?.setConfig) {
-      console.error('window.api is not available')
-      return
-    }
+    setSaving(true)
+    setError(null)
     try {
-      const res = await window.api.setConfig({
-        broker: localBroker,
-        room: localRoom,
-        topicTemplate: localTopic
-      })
-      if (res.ok) {
+      if (window.api?.setConfig) {
+        const res = await window.api.setConfig({
+          broker: localBroker,
+          room: localRoom,
+          topicTemplate: localTopic
+        })
+        if (res.ok) {
+          setBroker(localBroker)
+          setRoom(localRoom)
+          setTopicTemplate(localTopic)
+          localStorage.setItem('lastRoom', localRoom)
+          onClose()
+        } else {
+          setError('Failed to save config')
+        }
+      } else {
+        // Aggiorna comunque i valori globali/localStorage
         setBroker(localBroker)
         setRoom(localRoom)
         setTopicTemplate(localTopic)
         localStorage.setItem('lastRoom', localRoom)
         onClose()
-      } else {
-        console.error('Failed to save config')
       }
     } catch (err) {
+      setError('Failed to save config')
       console.error('Failed to save config', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Funzione per chiudere l'app con feedback
+  function handleCloseApp() {
+    try {
+      if (window.api?.closeApp) {
+        window.api.closeApp()
+      } else {
+        setError('Chiusura app non supportata in questo ambiente')
+      }
+    } catch (e) {
+      setError('Errore nella chiusura dell\'app')
+    }
+  }
+
+  // Funzione per abilitare/disabilitare MQTT
+  function handleToggleMqtt() {
+    setMqttToggleError(null)
+    try {
+      if (window.api?.disableMqtt) {
+        window.api.disableMqtt(!mqttEnabled)
+        setMqttEnabled((v) => !v)
+      } else {
+        setMqttEnabled((v) => !v)
+      }
+    } catch (e) {
+      setMqttToggleError('Errore nel cambio stato MQTT')
     }
   }
 
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
       <div className="bg-white text-black p-6 rounded-xl space-y-4 w-96 shadow-lg">
+        {error && (
+          <div className="bg-red-100 text-red-700 p-2 rounded text-sm">{error}</div>
+        )}
         <div>
           <label className="block text-sm font-medium">Broker</label>
           <input
@@ -166,9 +223,19 @@ export default function ControlPanel({
             </button>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">MQTT</label>
+          <button
+            onClick={handleToggleMqtt}
+            className={`px-3 py-1 rounded ${mqttEnabled ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}`}
+          >
+            {mqttEnabled ? 'Disattiva MQTT' : 'Attiva MQTT'}
+          </button>
+          {mqttToggleError && <span className="text-xs text-red-600">{mqttToggleError}</span>}
+        </div>
         <div className="flex justify-between pt-2">
           <button
-            onClick={() => window.api?.closeApp?.()}
+            onClick={handleCloseApp}
             className="px-3 py-1 bg-gray-200 rounded"
           >
             Close app
@@ -179,9 +246,16 @@ export default function ControlPanel({
           >
             {showAlerts ? 'Hide alerts' : 'Show alerts'}
           </button>
-          <button onClick={save} className="px-3 py-1 bg-blue-600 text-white rounded">
-            Save
+          <button
+            onClick={save}
+            className={`px-3 py-1 bg-blue-600 text-white rounded ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save'}
           </button>
+        </div>
+        <div className="text-xs text-gray-500 text-right pt-2">
+          Versione app: {appVersion || '...'}
         </div>
       </div>
     </div>

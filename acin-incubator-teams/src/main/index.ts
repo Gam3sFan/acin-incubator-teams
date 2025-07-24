@@ -188,6 +188,7 @@ ipcMain.handle('set-config', (_e, newCfg: Partial<Config>): { ok: boolean } => {
   }
   return { ok: false }
 })
+ipcMain.handle('get-app-version', () => app.getVersion())
 
 ipcMain.on('exit-kiosk', () => {
   if (win) {
@@ -204,6 +205,18 @@ ipcMain.on('open-teams', () => {
   shell.openExternal('msteams://').catch((err) => {
     console.error('Failed to open Teams', err)
   })
+})
+
+ipcMain.on('disable-mqtt', (_e, disable: boolean) => {
+  if (disable) {
+    if (mqttClient) {
+      mqttClient.end(true)
+      mqttClient = undefined
+      sendMqttStatus(false)
+    }
+  } else {
+    setupMqttListener().catch(console.error)
+  }
 })
 
 app.whenReady().then(() => {

@@ -17,7 +17,7 @@ export default function App(): React.JSX.Element {
   const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
   const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
-  const [showAlerts, setShowAlerts] = useState(true)
+  const [showAlerts, setShowAlerts] = useState(false)
   const roomInfo = ROOMS[roomName] || { id: 'unknown' }
 
   const [now, setNow] = useState(new Date())

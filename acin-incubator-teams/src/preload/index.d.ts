@@ -11,6 +11,8 @@ declare global {
       setConfig: (cfg: Record<string, unknown>) => Promise<{ ok: boolean }>
       onMqttStatus: (cb: (ok: boolean) => void) => void
       onConfig: (cb: (cfg: Record<string, unknown>) => void) => void
+      disableMqtt: (disable: boolean) => void
+      getAppVersion: () => Promise<string>
     }
   }
 }

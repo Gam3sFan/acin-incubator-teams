@@ -14,7 +14,9 @@ const api = {
   },
   onConfig: (cb: (cfg: Record<string, unknown>) => void): void => {
     ipcRenderer.on('config', (_e, cfg) => cb(cfg))
-  }
+  },
+  disableMqtt: (disable: boolean): void => ipcRenderer.send('disable-mqtt', disable),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
