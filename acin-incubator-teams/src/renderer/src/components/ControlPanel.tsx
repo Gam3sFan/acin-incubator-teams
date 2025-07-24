@@ -235,6 +235,7 @@ export default function ControlPanel({
         </div>
         <div className="flex justify-between pt-2">
           <button
+            hidden
             onClick={handleCloseApp}
             className="px-3 py-1 bg-gray-200 rounded"
           >
