@@ -17,6 +17,7 @@ export default function App(): React.JSX.Element {
   const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
   const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
+  const [showAlerts, setShowAlerts] = useState(true)
   const roomInfo = ROOMS[roomName] || { id: 'unknown' }
 
   const [now, setNow] = useState(new Date())
@@ -30,7 +31,7 @@ export default function App(): React.JSX.Element {
   }, [roomName])
 
   useEffect(() => {
-     if (!window.api) {
+    if (!window.api) {
       console.warn('window.api is undefined')
       return
     }
@@ -38,9 +39,9 @@ export default function App(): React.JSX.Element {
       if (cfg.broker) setBroker(String(cfg.broker))
       if (cfg.room) setRoomName(String(cfg.room))
       if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
-        if (!localStorage.getItem('lastRoom') && cfg.room) {
-          setRoomName(String(cfg.room))
-        }
+      if (!localStorage.getItem('lastRoom') && cfg.room) {
+        setRoomName(String(cfg.room))
+      }
     })
     window.api.onConfig((cfg) => {
       if (cfg.broker) setBroker(String(cfg.broker))
@@ -66,9 +67,11 @@ export default function App(): React.JSX.Element {
           setBroker={setBroker}
           setRoom={setRoomName}
           setTopicTemplate={setTopicTemplate}
+          setShowAlerts={setShowAlerts}
           broker={broker}
           room={roomName}
           topicTemplate={topicTemplate}
+          showAlerts={showAlerts}
         />
       )}
       <video
@@ -88,7 +91,7 @@ export default function App(): React.JSX.Element {
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
-          {(!online || !mqttOk) && (
+          {showAlerts && (!online || !mqttOk) && (
             <div className="mt-6 inline-flex items-center space-x-3  bg-black/20 backdrop-blur-md px-4 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.25)]">
               <img src={alertIcon} alt="alert" className="w-6 h-6" />
             </div>
@@ -108,7 +111,8 @@ export default function App(): React.JSX.Element {
           />
           <button
             onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
-            className="px-3 py-2 rounded text-white" style={{ backgroundColor: '#4f42b5' }}
+            className="px-3 py-2 rounded text-white"
+            style={{ backgroundColor: '#4f42b5' }}
           >
             Open Teams
           </button>
