@@ -1,6 +1,6 @@
 {
   "name": "acin-incubator-teams",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "ACN Incubator Smart Teams Background",
   "main": "./out/main/index.js",
   "author": "Francesco Scaglione",

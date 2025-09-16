@@ -1,5 +1,12 @@
-export const ROOMS: Record<string, { id: string }> = {
-  'Incubator Future': { id: 'ACIN.Future' },
-  'Incubator Energy': { id: 'ACIN.IncubatorEnergy' },
-  'Incubator Research': { id: 'ACIN.Research' }
+export type RoomInfo = {
+  id: string
+  isTouchscreen: boolean
+}
+
+export const ROOMS: Record<string, RoomInfo> = {
+  'Incubator Future': { id: 'ACIN.Future', isTouchscreen: true },
+  'Incubator Energy': { id: 'ACIN.IncubatorEnergy', isTouchscreen: true },
+  'Incubator Research': { id: 'ACIN.Research', isTouchscreen: true },
+  'Collaborate': { id: 'ACIN.Collaborate', isTouchscreen: false },
+  'Experience': { id: 'ACIN.Experience', isTouchscreen: false }
 }

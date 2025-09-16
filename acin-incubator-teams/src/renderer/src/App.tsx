@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ROOMS } from './roomData'
+import { ROOMS, type RoomInfo } from './roomData'
 import { usePing } from './usePing'
 import ControlPanel from './components/ControlPanel'
 import bgVideo from './assets/background.mp4'
@@ -18,7 +18,7 @@ export default function App(): React.JSX.Element {
   const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
-  const roomInfo = ROOMS[roomName] || { id: 'unknown' }
+  const roomInfo: RoomInfo = ROOMS[roomName] || { id: 'unknown', isTouchscreen: false }
 
   const [now, setNow] = useState(new Date())
   useEffect(() => {
@@ -109,19 +109,23 @@ export default function App(): React.JSX.Element {
             className="absolute right-6 top-2 w-10 h-10 opacity-90 cursor-pointer"
             onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
           />
-          <button
-            onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
-            className="px-3 py-2 rounded text-white"
-            style={{ backgroundColor: '#4f42b5' }}
-          >
-            Open Teams
-          </button>
+          {roomInfo.isTouchscreen && (
+            <button
+              onClick={() => window.api?.openTeams?.() ?? (window.location.href = 'msteams://')}
+              className="px-3 py-2 rounded text-white"
+              style={{ backgroundColor: '#4f42b5' }}
+            >
+              Open Teams
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center space-x-3 text-sm opacity-80">
-          <img src={touchIcon} alt="touch" className="w-6 h-6" />
-          <span>This is a touchscreen.</span>
-        </div>
+        {roomInfo.isTouchscreen && (
+          <div className="flex items-center space-x-3 text-sm opacity-80">
+            <img src={touchIcon} alt="touch" className="w-6 h-6" />
+            <span>This is a touchscreen.</span>
+          </div>
+        )}
       </div>
     </div>
   )
