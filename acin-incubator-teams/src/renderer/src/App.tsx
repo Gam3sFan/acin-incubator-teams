@@ -14,10 +14,14 @@ export default function App(): React.JSX.Element {
     return saved || 'Incubator Future'
   })
   const [broker, setBroker] = useState('10.107.188.153')
-  const [topicTemplate, setTopicTemplate] = useState('teams/${hostname}')
+  const [topicTemplate, setTopicTemplate] = useState('teams-status/${hostnameUpper}')
   const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
-  const [showAlerts, setShowAlerts] = useState(false)
+  const [incomingCall, setIncomingCall] = useState(false)
+  const [mqttTopicInfo, setMqttTopicInfo] = useState<{
+    topic: string | null
+    hostname: string
+  } | null>(null)
   const roomInfo: RoomInfo = ROOMS[roomName] || { id: 'unknown', isTouchscreen: false }
 
   const [now, setNow] = useState(new Date())
@@ -49,6 +53,8 @@ export default function App(): React.JSX.Element {
       if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
     })
     window.api.onMqttStatus(setMqttOk)
+    window.api.onMqttTopic((info) => setMqttTopicInfo(info))
+    window.api.onIncomingCall((active) => setIncomingCall(Boolean(active)))
   }, [])
 
   const online = usePing(broker.replace(/^mqtts?:\/\//, '').split(':')[0])
@@ -67,12 +73,15 @@ export default function App(): React.JSX.Element {
           setBroker={setBroker}
           setRoom={setRoomName}
           setTopicTemplate={setTopicTemplate}
-          setShowAlerts={setShowAlerts}
           broker={broker}
           room={roomName}
           topicTemplate={topicTemplate}
-          showAlerts={showAlerts}
         />
+      )}
+      {incomingCall && (
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg text-center text-lg font-semibold tracking-wide">
+          Per accettare la chiamate usate l'iPad mini
+        </div>
       )}
       <video
         src={bgVideo}
@@ -91,7 +100,10 @@ export default function App(): React.JSX.Element {
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
-          {showAlerts && (!online || !mqttOk) && (
+          <div className="text-sm mt-2 opacity-80">
+            Topic MQTT: {mqttTopicInfo?.topic ?? '...'} (PC: {mqttTopicInfo?.hostname ?? '...'})
+          </div>
+          {(!online || !mqttOk) && (
             <div className="mt-6 inline-flex items-center space-x-3  bg-black/20 backdrop-blur-md px-4 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.25)]">
               <img src={alertIcon} alt="alert" className="w-6 h-6" />
             </div>

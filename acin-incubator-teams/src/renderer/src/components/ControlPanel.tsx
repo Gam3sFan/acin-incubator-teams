@@ -6,11 +6,9 @@ interface Props {
   setBroker: (b: string) => void
   setRoom: (r: string) => void
   setTopicTemplate: (t: string) => void
-  setShowAlerts: (s: boolean) => void
   broker: string
   room: string
   topicTemplate: string
-  showAlerts: boolean
 }
 
 export default function ControlPanel({
@@ -18,11 +16,9 @@ export default function ControlPanel({
   setBroker,
   setRoom,
   setTopicTemplate,
-  setShowAlerts,
   broker,
   room,
-  topicTemplate,
-  showAlerts
+  topicTemplate
 }: Props): React.JSX.Element {
   const [localBroker, setLocalBroker] = useState(broker)
   const [localRoom, setLocalRoom] = useState(room)
@@ -32,7 +28,7 @@ export default function ControlPanel({
   const [micLevel, setMicLevel] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [mqttEnabled, setMqttEnabled] = useState(false)
+  const [mqttEnabled, setMqttEnabled] = useState(true)
   const [mqttToggleError, setMqttToggleError] = useState<string | null>(null)
   const [appVersion, setAppVersion] = useState<string>('1.0.0')
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -133,40 +129,23 @@ export default function ControlPanel({
     }
   }
 
-  // Funzione per chiudere l'app con feedback
-  function handleCloseApp() {
-    try {
-      if (window.api?.closeApp) {
-        window.api.closeApp()
-      } else {
-        setError('Chiusura app non supportata in questo ambiente')
-      }
-    } catch (e) {
-      setError('Errore nella chiusura dell\'app')
-    }
-  }
-
   // Funzione per abilitare/disabilitare MQTT
   function handleToggleMqtt() {
     setMqttToggleError(null)
     try {
+      const nextEnabled = !mqttEnabled
       if (window.api?.disableMqtt) {
-        window.api.disableMqtt(!mqttEnabled)
-        setMqttEnabled((v) => !v)
-      } else {
-        setMqttEnabled((v) => !v)
+        window.api.disableMqtt(!nextEnabled)
       }
+      setMqttEnabled(nextEnabled)
     } catch (e) {
       setMqttToggleError('Errore nel cambio stato MQTT')
     }
   }
-
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
       <div className="bg-white text-black p-6 rounded-xl space-y-4 w-96 shadow-lg">
-        {error && (
-          <div className="bg-red-100 text-red-700 p-2 rounded text-sm">{error}</div>
-        )}
+        {error && <div className="bg-red-100 text-red-700 p-2 rounded text-sm">{error}</div>}
         <div>
           <label className="block text-sm font-medium">Broker</label>
           <input
@@ -233,20 +212,7 @@ export default function ControlPanel({
           </button>
           {mqttToggleError && <span className="text-xs text-red-600">{mqttToggleError}</span>}
         </div>
-        <div className="flex justify-between pt-2">
-          <button
-            hidden
-            onClick={handleCloseApp}
-            className="px-3 py-1 bg-gray-200 rounded"
-          >
-            Close app
-          </button>
-          <button
-            onClick={() => setShowAlerts(!showAlerts)}
-            className="px-3 py-1 bg-gray-200 rounded"
-          >
-            {showAlerts ? 'Hide alerts' : 'Show alerts'}
-          </button>
+        <div className="flex justify-end pt-2">
           <button
             onClick={save}
             className={`px-3 py-1 bg-blue-600 text-white rounded ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}

@@ -8,5 +8,7 @@ export const ROOMS: Record<string, RoomInfo> = {
   'Incubator Energy': { id: 'ACIN.IncubatorEnergy', isTouchscreen: true },
   'Incubator Research': { id: 'ACIN.Research', isTouchscreen: true },
   'Collaborate': { id: 'ACIN.Collaborate', isTouchscreen: false },
-  'Experience': { id: 'ACIN.Experience', isTouchscreen: false }
+  'Experience': { id: 'ACIN.Experience', isTouchscreen: false },
+  'Envision': { id: 'ACIN.Envision', isTouchscreen: false },
+  'Insight': { id: 'ACIN.Insight', isTouchscreen: false }
 }

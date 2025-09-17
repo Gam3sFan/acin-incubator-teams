@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: acin-incubator-teams
+appId: com.scaglionefrancesco.teams
+productName: acin-teams
 directories:
   buildResources: build
 files:
