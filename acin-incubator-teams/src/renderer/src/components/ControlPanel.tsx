@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { ROOMS } from '../roomData'
 
 interface Props {
@@ -6,9 +6,11 @@ interface Props {
   setBroker: (b: string) => void
   setRoom: (r: string) => void
   setTopicTemplate: (t: string) => void
+  setBackgroundVideoEnabled: (enabled: boolean) => void
   broker: string
   room: string
   topicTemplate: string
+  backgroundVideoEnabled: boolean
 }
 
 export default function ControlPanel({
@@ -16,40 +18,22 @@ export default function ControlPanel({
   setBroker,
   setRoom,
   setTopicTemplate,
+  setBackgroundVideoEnabled,
   broker,
   room,
-  topicTemplate
+  topicTemplate,
+  backgroundVideoEnabled
 }: Props): React.JSX.Element {
   const [localBroker, setLocalBroker] = useState(broker)
   const [localRoom, setLocalRoom] = useState(room)
   const [localTopic, setLocalTopic] = useState(topicTemplate)
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [micLevel, setMicLevel] = useState(0)
+  const [localVideoEnabled, setLocalVideoEnabled] = useState(backgroundVideoEnabled)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [mqttEnabled, setMqttEnabled] = useState(true)
   const [mqttToggleError, setMqttToggleError] = useState<string | null>(null)
   const [appVersion, setAppVersion] = useState<string>('1.0.0')
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const rafRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    navigator.mediaDevices
-      .enumerateDevices()
-      .then((d) => setDevices(d))
-      .catch(console.error)
-  }, [])
-
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(videoRef.current as any).srcObject = stream
-    }
-  }, [stream])
-
-  // Aggiorna la room immediatamente al cambio della select
   useEffect(() => {
     setRoom(localRoom)
   }, [localRoom])
@@ -60,39 +44,9 @@ export default function ControlPanel({
     }
   }, [])
 
-  function stopTest(): void {
-    stream?.getTracks().forEach((t) => t.stop())
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    analyserRef.current?.disconnect()
-    setStream(null)
-    setMicLevel(0)
-  }
-
-  async function startTest(): Promise<void> {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      setStream(s)
-      const audioCtx = new AudioContext()
-      const analyser = audioCtx.createAnalyser()
-      analyser.fftSize = 256
-      audioCtx.createMediaStreamSource(s).connect(analyser)
-      analyserRef.current = analyser
-      const data = new Uint8Array(analyser.frequencyBinCount)
-      const tick = (): void => {
-        analyser.getByteTimeDomainData(data)
-        let sum = 0
-        data.forEach((v) => {
-          const d = v - 128
-          sum += d * d
-        })
-        setMicLevel(Math.min(1, Math.sqrt(sum / data.length) / 50))
-        rafRef.current = requestAnimationFrame(tick)
-      }
-      tick()
-    } catch (err) {
-      console.error('device test error', err)
-    }
-  }
+  useEffect(() => {
+    setLocalVideoEnabled(backgroundVideoEnabled)
+  }, [backgroundVideoEnabled])
 
   async function save(): Promise<void> {
     setSaving(true)
@@ -108,17 +62,20 @@ export default function ControlPanel({
           setBroker(localBroker)
           setRoom(localRoom)
           setTopicTemplate(localTopic)
+          setBackgroundVideoEnabled(localVideoEnabled)
           localStorage.setItem('lastRoom', localRoom)
+          localStorage.setItem('backgroundVideoEnabled', localVideoEnabled ? '1' : '0')
           onClose()
         } else {
           setError('Failed to save config')
         }
       } else {
-        // Aggiorna comunque i valori globali/localStorage
         setBroker(localBroker)
         setRoom(localRoom)
         setTopicTemplate(localTopic)
+        setBackgroundVideoEnabled(localVideoEnabled)
         localStorage.setItem('lastRoom', localRoom)
+        localStorage.setItem('backgroundVideoEnabled', localVideoEnabled ? '1' : '0')
         onClose()
       }
     } catch (err) {
@@ -129,7 +86,6 @@ export default function ControlPanel({
     }
   }
 
-  // Funzione per abilitare/disabilitare MQTT
   function handleToggleMqtt() {
     setMqttToggleError(null)
     try {
@@ -142,6 +98,7 @@ export default function ControlPanel({
       setMqttToggleError('Errore nel cambio stato MQTT')
     }
   }
+
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
       <div className="bg-white text-black p-6 rounded-xl space-y-4 w-96 shadow-lg">
@@ -174,33 +131,14 @@ export default function ControlPanel({
             ))}
           </select>
         </div>
-        <div>
-          <h3 className="text-sm font-medium">Devices</h3>
-          <ul className="max-h-24 overflow-auto text-xs mt-1 space-y-1">
-            {devices.map((d) => (
-              <li key={d.deviceId}>
-                {d.kind}: {d.label || 'Unnamed'}
-              </li>
-            ))}
-          </ul>
-          {stream ? (
-            <div className="mt-2 space-y-2">
-              <video ref={videoRef} autoPlay muted className="w-full h-32 bg-black rounded" />
-              <div className="h-2 bg-gray-300 rounded">
-                <div
-                  className="h-full bg-green-600 rounded"
-                  style={{ width: `${Math.round(micLevel * 100)}%` }}
-                />
-              </div>
-              <button onClick={stopTest} className="px-3 py-1 bg-gray-200 rounded w-full">
-                Stop test
-              </button>
-            </div>
-          ) : (
-            <button onClick={startTest} className="mt-2 px-3 py-1 bg-gray-200 rounded w-full">
-              Start webcam/mic test
-            </button>
-          )}
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">Video di sfondo</label>
+          <button
+            onClick={() => setLocalVideoEnabled((v) => !v)}
+            className={`px-3 py-1 rounded ${localVideoEnabled ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}`}
+          >
+            {localVideoEnabled ? 'Attivo' : 'Disattivo'}
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">MQTT</label>

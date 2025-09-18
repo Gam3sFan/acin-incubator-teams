@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ROOMS, type RoomInfo } from './roomData'
-import { usePing } from './usePing'
 import ControlPanel from './components/ControlPanel'
 import bgVideo from './assets/background.mp4'
+import ipadCalling from './assets/ipadminicallcoming.mp4'
+
 import teamsIcon from './assets/teams.svg'
 import touchIcon from './assets/touch.svg'
-import alertIcon from './assets/alert.svg'
 import './index.css'
 
 export default function App(): React.JSX.Element {
@@ -15,14 +15,15 @@ export default function App(): React.JSX.Element {
   })
   const [broker, setBroker] = useState('10.107.188.153')
   const [topicTemplate, setTopicTemplate] = useState('teams-status/${hostnameUpper}')
-  const [mqttOk, setMqttOk] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
   const [incomingCall, setIncomingCall] = useState(false)
-  const [mqttTopicInfo, setMqttTopicInfo] = useState<{
-    topic: string | null
-    hostname: string
-  } | null>(null)
+  const [backgroundVideoEnabled, setBackgroundVideoEnabled] = useState(() => {
+    const saved = localStorage.getItem('backgroundVideoEnabled')
+    if (saved === null) return true
+    return saved === '1'
+  })
   const roomInfo: RoomInfo = ROOMS[roomName] || { id: 'unknown', isTouchscreen: false }
+  const showBackgroundVideo = backgroundVideoEnabled && !incomingCall
 
   const [now, setNow] = useState(new Date())
   useEffect(() => {
@@ -33,6 +34,10 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     localStorage.setItem('lastRoom', roomName)
   }, [roomName])
+
+  useEffect(() => {
+    localStorage.setItem('backgroundVideoEnabled', backgroundVideoEnabled ? '1' : '0')
+  }, [backgroundVideoEnabled])
 
   useEffect(() => {
     if (!window.api) {
@@ -52,12 +57,8 @@ export default function App(): React.JSX.Element {
       if (cfg.room) setRoomName(String(cfg.room))
       if (cfg.topicTemplate) setTopicTemplate(String(cfg.topicTemplate))
     })
-    window.api.onMqttStatus(setMqttOk)
-    window.api.onMqttTopic((info) => setMqttTopicInfo(info))
     window.api.onIncomingCall((active) => setIncomingCall(Boolean(active)))
   }, [])
-
-  const online = usePing(broker.replace(/^mqtts?:\/\//, '').split(':')[0])
 
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateStr = now
@@ -73,24 +74,25 @@ export default function App(): React.JSX.Element {
           setBroker={setBroker}
           setRoom={setRoomName}
           setTopicTemplate={setTopicTemplate}
+          setBackgroundVideoEnabled={setBackgroundVideoEnabled}
           broker={broker}
           room={roomName}
           topicTemplate={topicTemplate}
+          backgroundVideoEnabled={backgroundVideoEnabled}
         />
       )}
-      {incomingCall && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg text-center text-lg font-semibold tracking-wide">
-          Per accettare la chiamate usate l'iPad mini
-        </div>
+      {showBackgroundVideo ? (
+        <video
+          src={bgVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-950 via-indigo-900 to-black" />
       )}
-      <video
-        src={bgVideo}
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
 
       <div className="absolute inset-0 bg-purple-700/70 mix-blend-multiply" />
       <div className="relative z-10 flex flex-col justify-between w-full h-full p-12">
@@ -100,12 +102,19 @@ export default function App(): React.JSX.Element {
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>
-          <div className="text-sm mt-2 opacity-80">
-            Topic MQTT: {mqttTopicInfo?.topic ?? '...'} (PC: {mqttTopicInfo?.hostname ?? '...'})
-          </div>
-          {(!online || !mqttOk) && (
-            <div className="mt-6 inline-flex items-center space-x-3  bg-black/20 backdrop-blur-md px-4 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.25)]">
-              <img src={alertIcon} alt="alert" className="w-6 h-6" />
+          {incomingCall && (
+             <div className="mt-6 flex items-center space-x-6 w-[640px] bg-black/20 p-4 rounded-[12px]">
+              <video
+                src={ipadCalling}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-[200px] rounded-[5px] shadow-lg"
+              />
+              <p className="text-base leading-snug text-shadow-md">
+                To <b>accept</b> or <b>decline</b> the call, use the <b>room iPad</b>  or the popup in the bottom right if the screen supports touch.
+              </p>
             </div>
           )}
         </div>

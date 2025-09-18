@@ -12,26 +12,26 @@ export function usePing(target: string = '10.107.188.153'): boolean {
 
   useEffect(() => {
     let cancelled = false
-    const requestUrl = normaliseTarget(target)
+    const normalisedTarget = normaliseTarget(target)
 
-    if (!requestUrl) {
+    if (!normalisedTarget) {
       setOnline(false)
       return () => {
         cancelled = true
       }
     }
 
-    async function ping(): Promise<void> {
+    async function ping(url: string): Promise<void> {
       try {
-        await fetch(requestUrl, { mode: 'no-cors' })
+        await fetch(url, { mode: 'no-cors' })
         if (!cancelled) setOnline(true)
       } catch {
         if (!cancelled) setOnline(false)
       }
     }
 
-    ping()
-    const id = setInterval(ping, 5_000)
+    void ping(normalisedTarget)
+    const id = setInterval(() => { void ping(normalisedTarget) }, 5_000)
 
     return () => {
       cancelled = true
