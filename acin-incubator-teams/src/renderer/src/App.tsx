@@ -113,8 +113,8 @@ export default function App(): React.JSX.Element {
                 playsInline
                 className="w-[200px] rounded-[5px] shadow-lg"
               />
-              <p className="text-base leading-snug text-shadow-md">
-                To <b>accept</b> or <b>decline</b> the call, use the <b>room iPad</b>  or the popup in the bottom right if the screen supports touch.
+              <p className="text-xl leading-snug text-shadow-md">
+                To <b>accept</b> or <b>decline</b> the call, use the <b>room iPad</b> or, if the screen supports touch, use the popup in the bottom right.
               </p>
             </div>
           )}
