@@ -95,10 +95,11 @@ export default function App(): React.JSX.Element {
       )}
 
       <div className="absolute inset-0 bg-purple-700/70 mix-blend-multiply" />
+      {incomingCall && <div className="spotlight-glow" />}
       <div className="relative z-10 flex flex-col justify-between w-full h-full p-12">
         <div>
           <h1 className="text-4xl font-light text-shadow-md">{roomName}</h1>
-          <div className="mt-4 text-[192px] leading-none font-bold tracking-tight text-shadow-lg">
+          <div className="mt-4 text-[160px] leading-none font-bold tracking-tight text-shadow-lg">
             {timeStr}
           </div>
           <div className="text-2xl mt-2 tracking-widest text-shadow-lg">{dateStr}</div>

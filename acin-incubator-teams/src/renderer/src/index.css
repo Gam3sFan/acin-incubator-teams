@@ -3,3 +3,18 @@
 
 /* facoltativo: se vuoi usare il file JS/CJS di config */
 @config "../../../tailwind.config.cjs";
+
+.spotlight-glow {
+  position: absolute;
+  bottom: -16rem;
+  right: -16rem;
+  width: 56rem;
+  height: 56rem;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.3) 35%, rgba(255, 255, 255, 0));
+  filter: blur(80px);
+  opacity: 0.5;
+  mix-blend-mode: hard-light;
+  z-index: 5;
+}
