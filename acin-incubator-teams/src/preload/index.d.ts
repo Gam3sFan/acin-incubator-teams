@@ -1,3 +1,5 @@
+import type { UpdateStatusPayload } from '../shared/updateStatus'
+
 declare global {
   interface RendererElectronAPI {
     process: {
@@ -19,6 +21,9 @@ declare global {
       onConfig: (cb: (cfg: Record<string, unknown>) => void) => void
       disableMqtt: (disable: boolean) => void
       getAppVersion: () => Promise<string>
+      getUpdateStatus: () => Promise<UpdateStatusPayload>
+      checkForUpdates: () => void
+      onUpdateStatus: (cb: (payload: UpdateStatusPayload) => void) => () => void
     }
   }
 }

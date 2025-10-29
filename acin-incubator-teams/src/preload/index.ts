@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { UpdateStatusPayload } from '../shared/updateStatus'
 
 const electronAPI = Object.freeze({
   process: {
@@ -27,7 +28,16 @@ const api = {
     ipcRenderer.on('config', (_e, cfg) => cb(cfg))
   },
   disableMqtt: (disable: boolean): void => ipcRenderer.send('disable-mqtt', disable),
-  getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version')
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
+  getUpdateStatus: (): Promise<UpdateStatusPayload> => ipcRenderer.invoke('get-update-status'),
+  checkForUpdates: (): void => ipcRenderer.send('check-for-updates'),
+  onUpdateStatus: (cb: (payload: UpdateStatusPayload) => void): (() => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, payload: UpdateStatusPayload) => cb(payload)
+    ipcRenderer.on('update-status', listener)
+    return () => {
+      ipcRenderer.removeListener('update-status', listener)
+    }
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

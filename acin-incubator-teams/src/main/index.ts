@@ -7,6 +7,9 @@ import ini from 'ini'
 import AutoLaunch from 'auto-launch'
 import os from 'os'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
+import type { ProgressInfo, UpdateInfo } from 'electron-updater'
+import type { UpdateStatusPayload } from '../shared/updateStatus'
 import icon from '../../resources/icon.png?asset'
 
 let mqtt: typeof import('mqtt') | undefined
@@ -16,6 +19,31 @@ const __dirname = path.dirname(__filename)
 const isDev = !app.isPackaged
 
 let win: BrowserWindow | null = null
+
+let autoUpdaterConfigured = false
+let quittingForUpdate = false
+let updateCheckInProgress = false
+let updateChecksAllowedInDev = true
+let lastUpdateStatus: UpdateStatusPayload | null = null
+
+function sendUpdateStatus(payload: UpdateStatusPayload): void {
+  lastUpdateStatus = payload
+  const contents = getRendererContents()
+  if (contents) contents.send('update-status', payload)
+}
+
+function simplifiedUpdateInfo(info: UpdateInfo): { version: string; releaseDate?: string } {
+  return {
+    version: info.version,
+    releaseDate: info.releaseDate ?? undefined
+  }
+}
+
+function replayUpdateStatus(): void {
+  if (!lastUpdateStatus) return
+  const contents = getRendererContents()
+  if (contents) contents.send('update-status', lastUpdateStatus)
+}
 
 function getRendererContents(): WebContents | null {
   if (!win || win.isDestroyed()) return null
@@ -112,7 +140,100 @@ function emitIncomingCall(active: boolean): void {
   sendIncomingCall(active)
 }
 
+/* ---------- AUTO UPDATER ---------- */
 
+function configureAutoUpdater(): void {
+  if (autoUpdaterConfigured) return
+  autoUpdaterConfigured = true
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  let devUpdateConfigFound = true
+
+  if (isDev) {
+    const updateConfigPath = path.resolve(__dirname, '../../dev-app-update.yml')
+    if (fs.existsSync(updateConfigPath)) {
+      autoUpdater.forceDevUpdateConfig = true
+      autoUpdater.updateConfigPath = updateConfigPath
+    } else {
+      devUpdateConfigFound = false
+      updateChecksAllowedInDev = false
+      console.warn('[Updater] dev-app-update.yml non trovato, aggiornamenti locali disabilitati')
+    }
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    sendUpdateStatus({ status: 'checking' })
+  })
+
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
+    sendUpdateStatus({ status: 'update-available', ...simplifiedUpdateInfo(info) })
+  })
+
+  autoUpdater.on('update-not-available', (info: UpdateInfo) => {
+    sendUpdateStatus({ status: 'update-not-available', ...simplifiedUpdateInfo(info) })
+  })
+
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    sendUpdateStatus({
+      status: 'download-progress',
+      progress: {
+        percent: progress.percent,
+        transferred: progress.transferred,
+        total: progress.total,
+        bytesPerSecond: progress.bytesPerSecond
+      }
+    })
+  })
+
+  autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+    sendUpdateStatus({ status: 'update-downloaded', ...simplifiedUpdateInfo(info) })
+
+    if (quittingForUpdate) return
+    quittingForUpdate = true
+
+    setTimeout(() => {
+      autoUpdater.quitAndInstall(true, true)
+    }, 1500)
+  })
+
+  autoUpdater.on('error', (error: unknown) => {
+    const message =
+      error instanceof Error ? error.message : error ? String(error) : 'Errore sconosciuto'
+    console.error('[Updater] errore', error)
+    sendUpdateStatus({ status: 'error', message })
+  })
+
+  if (isDev && !devUpdateConfigFound) {
+    sendUpdateStatus({
+      status: 'disabled',
+      message: 'Aggiornamenti automatici disabilitati in sviluppo (dev-app-update.yml mancante).'
+    })
+  } else {
+    sendUpdateStatus({ status: 'idle', version: app.getVersion() })
+  }
+}
+
+function requestUpdateCheck(): void {
+  configureAutoUpdater()
+
+  if (isDev && !updateChecksAllowedInDev) return
+  if (updateCheckInProgress) return
+
+  updateCheckInProgress = true
+  autoUpdater
+    .checkForUpdates()
+    .catch((error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : error ? String(error) : 'Errore sconosciuto'
+      console.error('[Updater] check fallito', error)
+      sendUpdateStatus({ status: 'error', message })
+    })
+    .finally(() => {
+      updateCheckInProgress = false
+    })
+}
 
 /* ---------- MQTT ---------- */
 
@@ -261,7 +382,10 @@ function createWindow(): void {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 
-  win.webContents.on('did-finish-load', sendConfigToRenderer)
+  win.webContents.on('did-finish-load', () => {
+    sendConfigToRenderer()
+    replayUpdateStatus()
+  })
 }
 
 /* ---------- IPC ---------- */
@@ -283,6 +407,14 @@ ipcMain.handle('set-config', (_e, newCfg: Partial<Config>): { ok: boolean } => {
 })
 
 ipcMain.handle('get-app-version', () => app.getVersion())
+
+ipcMain.handle('get-update-status', () =>
+  lastUpdateStatus ?? { status: 'idle', version: app.getVersion() }
+)
+
+ipcMain.on('check-for-updates', () => {
+  requestUpdateCheck()
+})
 
 ipcMain.on('exit-kiosk', () => {
   if (win) {
@@ -323,6 +455,8 @@ app.whenReady().then(() => {
   createWindow()
 
   setupMqttListener().catch(console.error)
+
+  requestUpdateCheck()
 
   new AutoLaunch({ name: 'RoomDisplayApp' }).isEnabled().then((enabled) => {
     if (!enabled) new AutoLaunch({ name: 'RoomDisplayApp' }).enable()

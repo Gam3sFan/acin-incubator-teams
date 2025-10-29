@@ -10,5 +10,7 @@ export const ROOMS: Record<string, RoomInfo> = {
   'Collaborate': { id: 'ACIN.Collaborate', isTouchscreen: false },
   'Experience': { id: 'ACIN.Experience', isTouchscreen: false },
   'Envision': { id: 'ACIN.Envision', isTouchscreen: false },
-  'Insight': { id: 'ACIN.Insight', isTouchscreen: false }
+  'Insight': { id: 'ACIN.Insight', isTouchscreen: false },
+  'ACIN Surface 1': { id: 'acin.surface1', isTouchscreen: true },
+  'ACIN Surface 2': { id: 'acin.surface2', isTouchscreen: true }
 }

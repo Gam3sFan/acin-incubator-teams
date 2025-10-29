@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ROOMS } from '../roomData'
+import type { UpdateStatusPayload } from '../../../shared/updateStatus'
 
 interface Props {
   onClose: () => void
@@ -33,6 +34,7 @@ export default function ControlPanel({
   const [mqttEnabled, setMqttEnabled] = useState(true)
   const [mqttToggleError, setMqttToggleError] = useState<string | null>(null)
   const [appVersion, setAppVersion] = useState<string>('1.0.0')
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatusPayload | null>(null)
 
   useEffect(() => {
     setRoom(localRoom)
@@ -41,6 +43,33 @@ export default function ControlPanel({
   useEffect(() => {
     if (window.api?.getAppVersion) {
       window.api.getAppVersion().then(setAppVersion)
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
+
+    if (window.api?.onUpdateStatus) {
+      unsubscribe = window.api.onUpdateStatus((payload) => {
+        if (!cancelled) setUpdateStatus(payload)
+      })
+    }
+
+    if (window.api?.getUpdateStatus) {
+      window.api
+        .getUpdateStatus()
+        .then((payload) => {
+          if (!cancelled) setUpdateStatus(payload)
+        })
+        .catch((err) => console.error('Failed to fetch update status', err))
+    }
+
+    window.api?.checkForUpdates?.()
+
+    return () => {
+      cancelled = true
+      unsubscribe?.()
     }
   }, [])
 
@@ -98,6 +127,35 @@ export default function ControlPanel({
       setMqttToggleError('Errore nel cambio stato MQTT')
     }
   }
+
+  const updateMessage = (() => {
+    if (!updateStatus) return 'Verifica aggiornamenti...'
+    switch (updateStatus.status) {
+      case 'idle':
+        return `Versione corrente installata: v${updateStatus.version}`
+      case 'checking':
+        return 'Ricerca aggiornamenti in corso...'
+      case 'update-available':
+        return `Disponibile la versione v${updateStatus.version}, download avviato...`
+      case 'update-not-available':
+        return `Nessun aggiornamento disponibile (v${updateStatus.version})`
+      case 'download-progress':
+        return `Download aggiornamento... ${Math.round(updateStatus.progress.percent)}%`
+      case 'update-downloaded':
+        return `Aggiornamento v${updateStatus.version} scaricato, l'app si riavvierà a breve`
+      case 'error':
+        return `Errore aggiornamenti: ${updateStatus.message}`
+      case 'disabled':
+        return updateStatus.message
+      default:
+        return 'Stato aggiornamenti sconosciuto'
+    }
+  })()
+
+  const updateProgressPercent =
+    updateStatus?.status === 'download-progress'
+      ? Math.max(0, Math.min(100, Math.round(updateStatus.progress.percent)))
+      : null
 
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
@@ -159,8 +217,17 @@ export default function ControlPanel({
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
-        <div className="text-xs text-gray-500 text-right pt-2">
-          Versione app: {appVersion || '...'}
+        <div className="text-xs text-gray-500 pt-2 space-y-1">
+          <div className="text-right">Versione app: {appVersion || '...'}</div>
+          <div>{updateMessage}</div>
+          {typeof updateProgressPercent === 'number' && (
+            <div className="w-full bg-gray-200 h-1 rounded">
+              <div
+                className="bg-blue-600 h-1 rounded"
+                style={{ width: `${updateProgressPercent}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
