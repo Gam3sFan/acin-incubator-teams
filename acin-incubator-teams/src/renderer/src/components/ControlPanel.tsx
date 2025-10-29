@@ -157,6 +157,13 @@ export default function ControlPanel({
       ? Math.max(0, Math.min(100, Math.round(updateStatus.progress.percent)))
       : null
 
+  const updateCheckInFlight =
+    updateStatus?.status === 'checking' || updateStatus?.status === 'download-progress'
+
+  function handleManualUpdateCheck(): void {
+    window.api?.checkForUpdates?.()
+  }
+
   return (
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
       <div className="bg-white text-black p-6 rounded-xl space-y-4 w-96 shadow-lg">
@@ -220,6 +227,19 @@ export default function ControlPanel({
         <div className="text-xs text-gray-500 pt-2 space-y-1">
           <div className="text-right">Versione app: {appVersion || '...'}</div>
           <div>{updateMessage}</div>
+          <div className="flex justify-end">
+            <button
+              onClick={handleManualUpdateCheck}
+              className={`px-2 py-1 text-xs rounded border ${
+                updateCheckInFlight
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+              }`}
+              disabled={updateCheckInFlight}
+            >
+              {updateCheckInFlight ? 'Ricerca in corso...' : 'Controlla aggiornamenti'}
+            </button>
+          </div>
           {typeof updateProgressPercent === 'number' && (
             <div className="w-full bg-gray-200 h-1 rounded">
               <div
