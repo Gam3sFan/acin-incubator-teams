@@ -12,6 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
+  icon: resources/icon.ico
   executableName: acin-incubator-teams
   target:
     - target: nsis
