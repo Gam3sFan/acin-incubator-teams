@@ -352,8 +352,8 @@ function createWindow(): void {
     height: 1080,
     show: true,
     autoHideMenuBar: true,
-    fullscreen: true,
-    kiosk: true,
+    fullscreen: false,
+    kiosk: false,
     alwaysOnTop: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
