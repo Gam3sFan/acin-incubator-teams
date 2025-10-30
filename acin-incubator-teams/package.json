@@ -1,6 +1,6 @@
 {
   "name": "acin-background-teams",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "ACIN Smart Teams Background",
   "main": "./out/main/index.js",
   "author": "Francesco Scaglione",
